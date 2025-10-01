@@ -1,0 +1,37 @@
+# Django Core
+Django==5.2.6
+djangorestframework==3.15.2
+
+# CORS Headers
+django-cors-headers==4.6.0
+
+# Database (opcional para PostgreSQL en producción)
+# psycopg2-binary==2.9.9
+
+# Environment Variables
+python-decouple==3.8
+
+# Autenticación JWT (recomendado para API REST)
+djangorestframework-simplejwt==5.3.1
+
+# Rate Limiting (protección contra ataques de fuerza bruta)
+django-ratelimit==4.1.0
+
+# Utilidades de desarrollo
+# django-extensions==3.2.3
+# ipython==8.29.0
+
+# Testing
+# pytest==8.3.4
+# pytest-django==4.9.0
+
+# Exportación de datos
+# django-import-export==4.2.0
+# openpyxl==3.1.5
+
+# Generación de PDFs
+# reportlab==4.2.5
+
+# Servidor de producción
+# gunicorn==23.0.0
+# whitenoise==6.8.2

@@ -1,0 +1,122 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div id="content-main">
+    <h1>{{ title }}</h1>
+
+    {% for data in asistentes_data %}
+    <div style="background-color: white; padding: 20px; margin-bottom: 30px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="color: #417690; border-bottom: 2px solid #417690; padding-bottom: 10px;">
+            👤 {{ data.asistente.user_profile.full_name }}
+            <small style="color: #666; font-size: 0.8em;">(Cuenta: {{ data.asistente.user_profile.account_number }})</small>
+        </h2>
+
+        <div style="display: flex; gap: 20px; margin: 20px 0;">
+            <div style="background-color: #e8f4f8; padding: 15px; border-radius: 5px; flex: 1; text-align: center;">
+                <div style="font-size: 2em; color: #417690; font-weight: bold;">{{ data.total }}</div>
+                <div style="color: #666;">Registros Totales</div>
+            </div>
+            <div style="background-color: #e8f4e8; padding: 15px; border-radius: 5px; flex: 1; text-align: center;">
+                <div style="font-size: 2em; color: #28a745; font-weight: bold;">{{ data.total_estudiantes }}</div>
+                <div style="color: #666;">Estudiantes Regulares</div>
+            </div>
+            <div style="background-color: #fff4e8; padding: 15px; border-radius: 5px; flex: 1; text-align: center;">
+                <div style="font-size: 2em; color: #ff9800; font-weight: bold;">{{ data.total_externos }}</div>
+                <div style="color: #666;">Usuarios Externos</div>
+            </div>
+        </div>
+
+        {% if data.estudiantes %}
+        <h3 style="color: #28a745; margin-top: 30px;">📚 Estudiantes Regulares ({{ data.total_estudiantes }})</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 12px; text-align: left;">Fecha y Hora</th>
+                        <th style="padding: 12px; text-align: left;">Estudiante</th>
+                        <th style="padding: 12px; text-align: left;">Número de Cuenta</th>
+                        <th style="padding: 12px; text-align: left;">Evento</th>
+                        <th style="padding: 12px; text-align: left;">Método</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reg in data.estudiantes %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 10px;">{{ reg.timestamp|date:"d/m/Y H:i" }}</td>
+                        <td style="padding: 10px;">{{ reg.student.full_name }}</td>
+                        <td style="padding: 10px;"><code>{{ reg.student.account_number }}</code></td>
+                        <td style="padding: 10px;">{{ reg.event.title }}</td>
+                        <td style="padding: 10px;">
+                            {% if reg.registration_method == 'manual' %}
+                                <span style="background-color: #e3f2fd; color: #1976d2; padding: 3px 8px; border-radius: 3px;">✍️ Manual</span>
+                            {% elif reg.registration_method == 'barcode' %}
+                                <span style="background-color: #f3e5f5; color: #7b1fa2; padding: 3px 8px; border-radius: 3px;">📱 Código</span>
+                            {% else %}
+                                <span style="background-color: #e8f5e9; color: #388e3c; padding: 3px 8px; border-radius: 3px;">{{ reg.registration_method }}</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if data.externos %}
+        <h3 style="color: #ff9800; margin-top: 30px;">🌍 Usuarios Externos ({{ data.total_externos }})</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="background-color: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                        <th style="padding: 12px; text-align: left;">Fecha y Hora</th>
+                        <th style="padding: 12px; text-align: left;">Usuario Externo</th>
+                        <th style="padding: 12px; text-align: left;">ID Temporal</th>
+                        <th style="padding: 12px; text-align: left;">Institución</th>
+                        <th style="padding: 12px; text-align: left;">Evento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for reg in data.externos %}
+                    <tr style="border-bottom: 1px solid #dee2e6;">
+                        <td style="padding: 10px;">{{ reg.timestamp|date:"d/m/Y H:i" }}</td>
+                        <td style="padding: 10px;">{{ reg.external_user.full_name }}</td>
+                        <td style="padding: 10px;"><code>{{ reg.external_user.temporary_id }}</code></td>
+                        <td style="padding: 10px;">{{ reg.external_user.institution }}</td>
+                        <td style="padding: 10px;">{{ reg.event.title }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        {% if not data.estudiantes and not data.externos %}
+        <p style="text-align: center; color: #999; padding: 40px; font-style: italic;">
+            Este asistente aún no ha registrado ninguna asistencia.
+        </p>
+        {% endif %}
+    </div>
+    {% endfor %}
+
+    <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
+        <a href="{% url 'admin:authentication_asistente_changelist' %}" style="text-decoration: none;">
+            <button style="background-color: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 3px; cursor: pointer;">
+                ← Volver a Lista de Asistentes
+            </button>
+        </a>
+        <button onclick="window.print()" style="background-color: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 3px; cursor: pointer; margin-left: 10px;">
+            🖨️ Imprimir Reporte
+        </button>
+    </div>
+</div>
+
+<style>
+    @media print {
+        .breadcrumbs, #header, #footer, button { display: none !important; }
+        body { background: white; }
+    }
+</style>
+{% endblock %}
