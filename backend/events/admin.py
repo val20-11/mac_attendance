@@ -23,22 +23,19 @@ class EventAdmin(admin.ModelAdmin):
 
 @admin.register(ExternalUser)
 class ExternalUserAdmin(admin.ModelAdmin):
-    list_display = ['full_name', 'email', 'institution', 'get_status', 'get_approved_by', 'created_at']
-    list_filter = ['status', 'institution', 'created_at', 'approved_by']
-    search_fields = ['full_name', 'email', 'institution', 'temporary_id', 'approved_by__full_name']
+    list_display = ['account_number', 'full_name', 'get_status', 'get_approved_by', 'created_at']
+    list_filter = ['status', 'created_at', 'approved_by']
+    search_fields = ['full_name', 'account_number', 'approved_by__full_name']
     ordering = ['-created_at']
-    readonly_fields = ['created_at', 'processed_at', 'temporary_id']
+    readonly_fields = ['created_at', 'processed_at']
     date_hierarchy = 'created_at'
 
     fieldsets = (
         ('Información Personal', {
-            'fields': ('full_name', 'email', 'phone', 'institution', 'position')
-        }),
-        ('Solicitud', {
-            'fields': ('reason', 'temporary_id', 'created_at')
+            'fields': ('account_number', 'full_name')
         }),
         ('Estado de Aprobación', {
-            'fields': ('status', 'approved_by', 'processed_at', 'rejection_reason')
+            'fields': ('status', 'approved_by', 'processed_at', 'rejection_reason', 'created_at')
         }),
     )
 

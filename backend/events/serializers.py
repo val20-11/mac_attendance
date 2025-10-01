@@ -14,7 +14,6 @@ class ExternalUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = ExternalUser
         fields = [
-            'id', 'full_name', 'email', 'phone', 'institution',
-            'position', 'reason', 'temporary_id', 'status',
+            'id', 'full_name', 'account_number', 'status',
             'created_at', 'processed_at'
         ]

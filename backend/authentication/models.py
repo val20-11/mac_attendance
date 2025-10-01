@@ -27,17 +27,6 @@ class UserProfile(models.Model):
         max_length=200,
         verbose_name="Nombre completo"
     )
-    career = models.CharField(
-        max_length=100, 
-        blank=True, 
-        null=True,
-        verbose_name="Carrera"
-    )
-    semester = models.IntegerField(
-        blank=True, 
-        null=True,
-        verbose_name="Semestre"
-    )
 
     def __str__(self):
         return f"{self.account_number} - {self.full_name}"

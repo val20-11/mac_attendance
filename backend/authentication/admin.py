@@ -1,13 +1,52 @@
 from django.contrib import admin
+from django.contrib.auth.models import User
+from django import forms
 from .models import UserProfile, Asistente
 from .audit import AuditLog
 
 
+class UserProfileForm(forms.ModelForm):
+    """Formulario personalizado para crear UserProfile sin contraseña"""
+
+    class Meta:
+        model = UserProfile
+        fields = ['account_number', 'full_name', 'user_type']
+
+    def save(self, commit=True):
+        profile = super().save(commit=False)
+
+        # Si el perfil no tiene usuario asociado, crear uno automáticamente
+        if not profile.user_id:
+            # Crear usuario con username = número de cuenta, sin contraseña
+            user = User.objects.create_user(
+                username=profile.account_number,
+                first_name=profile.full_name,
+                password=None  # Sin contraseña
+            )
+            # Desactivar contraseña usable
+            user.set_unusable_password()
+            user.save()
+            profile.user = user
+
+        if commit:
+            profile.save()
+
+        return profile
+
+
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ['account_number', 'full_name', 'user_type', 'career', 'semester']
+    form = UserProfileForm
+    list_display = ['account_number', 'full_name', 'user_type']
     search_fields = ['account_number', 'full_name']
     list_filter = ['user_type']
+
+    fieldsets = (
+        ('Información del Usuario', {
+            'fields': ('account_number', 'full_name', 'user_type'),
+            'description': 'Los usuarios se crean automáticamente sin contraseña. El acceso es solo con número de cuenta.'
+        }),
+    )
 
 
 @admin.register(Asistente)

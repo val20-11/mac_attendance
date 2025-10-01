@@ -3,12 +3,7 @@ import { apiRequest } from '../services/api'
 
 const ExternalRegistration = ({ onBack }) => {
     const [formData, setFormData] = useState({
-        full_name: '',
-        email: '',
-        phone: '',
-        institution: '',
-        position: '',
-        reason: ''
+        full_name: ''
     })
     const [loading, setLoading] = useState(false)
     const [message, setMessage] = useState('')
@@ -30,12 +25,7 @@ const ExternalRegistration = ({ onBack }) => {
             setTemporaryId(response.temporary_id)
             setMessageType('success')
             setFormData({
-                full_name: '',
-                email: '',
-                phone: '',
-                institution: '',
-                position: '',
-                reason: ''
+                full_name: ''
             })
         } catch (error) {
             setMessage('Error al enviar solicitud: ' + (error.response?.data?.error || 'Error desconocido'))
@@ -124,110 +114,6 @@ const ExternalRegistration = ({ onBack }) => {
                                     border: '1px solid rgba(255,255,255,0.3)',
                                     backgroundColor: 'rgba(255,255,255,0.1)',
                                     color: 'white'
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', color: 'white', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                                Correo Electrónico *
-                            </label>
-                            <input
-                                type="email"
-                                name="email"
-                                value={formData.email}
-                                onChange={handleChange}
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: '1px solid rgba(255,255,255,0.3)',
-                                    backgroundColor: 'rgba(255,255,255,0.1)',
-                                    color: 'white'
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', color: 'white', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                                Teléfono
-                            </label>
-                            <input
-                                type="tel"
-                                name="phone"
-                                value={formData.phone}
-                                onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: '1px solid rgba(255,255,255,0.3)',
-                                    backgroundColor: 'rgba(255,255,255,0.1)',
-                                    color: 'white'
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', color: 'white', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                                Institución de Procedencia *
-                            </label>
-                            <input
-                                type="text"
-                                name="institution"
-                                value={formData.institution}
-                                onChange={handleChange}
-                                required
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: '1px solid rgba(255,255,255,0.3)',
-                                    backgroundColor: 'rgba(255,255,255,0.1)',
-                                    color: 'white'
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', color: 'white', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                                Cargo/Posición
-                            </label>
-                            <input
-                                type="text"
-                                name="position"
-                                value={formData.position}
-                                onChange={handleChange}
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: '1px solid rgba(255,255,255,0.3)',
-                                    backgroundColor: 'rgba(255,255,255,0.1)',
-                                    color: 'white'
-                                }}
-                            />
-                        </div>
-
-                        <div>
-                            <label style={{ display: 'block', color: 'white', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                                Motivo de Asistencia *
-                            </label>
-                            <textarea
-                                name="reason"
-                                value={formData.reason}
-                                onChange={handleChange}
-                                required
-                                rows="3"
-                                style={{
-                                    width: '100%',
-                                    padding: '0.75rem',
-                                    borderRadius: '0.5rem',
-                                    border: '1px solid rgba(255,255,255,0.3)',
-                                    backgroundColor: 'rgba(255,255,255,0.1)',
-                                    color: 'white',
-                                    resize: 'vertical'
                                 }}
                             />
                         </div>

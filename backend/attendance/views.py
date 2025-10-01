@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from django_ratelimit.decorators import ratelimit
 from authentication.models import UserProfile
-from events.models import Event
+from events.models import Event, ExternalUser
 from .models import Attendance, AttendanceStats
 
 @api_view(['GET', 'POST'])
@@ -48,42 +48,64 @@ def register_attendance(request):
             'error': 'Evento no encontrado'
         }, status=status.HTTP_404_NOT_FOUND)
     
-    # Buscar estudiante
+    # Buscar estudiante regular o usuario externo
+    student_profile = None
+    external_user = None
+    attendee_name = None
+
+    # Primero buscar en estudiantes regulares
     try:
         student_profile = UserProfile.objects.get(
             account_number=account_number,
             user_type='student'
         )
+        attendee_name = student_profile.full_name
     except UserProfile.DoesNotExist:
-        return Response({
-            'error': f'Estudiante con número de cuenta {account_number} no encontrado'
-        }, status=status.HTTP_404_NOT_FOUND)
-    
+        # Si no es estudiante, buscar en usuarios externos
+        try:
+            external_user = ExternalUser.objects.get(
+                account_number=account_number,
+                status='approved'
+            )
+            attendee_name = external_user.full_name
+        except ExternalUser.DoesNotExist:
+            return Response({
+                'error': f'Usuario con número de cuenta {account_number} no encontrado o no aprobado'
+            }, status=status.HTTP_404_NOT_FOUND)
+
     # Usar el asistente autenticado como registrador
     assistant_profile = registrar_profile
-    
+
     # Verificar si ya tiene asistencia
-    if Attendance.objects.filter(student=student_profile, event=event, is_valid=True).exists():
-        return Response({
-            'error': 'El estudiante ya tiene asistencia registrada para este evento'
-        }, status=status.HTTP_400_BAD_REQUEST)
-    
+    if student_profile:
+        if Attendance.objects.filter(student=student_profile, event=event, is_valid=True).exists():
+            return Response({
+                'error': 'El estudiante ya tiene asistencia registrada para este evento'
+            }, status=status.HTTP_400_BAD_REQUEST)
+    elif external_user:
+        if Attendance.objects.filter(external_user=external_user, event=event, is_valid=True).exists():
+            return Response({
+                'error': 'El usuario externo ya tiene asistencia registrada para este evento'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
     # Crear asistencia
     try:
         attendance = Attendance.objects.create(
             student=student_profile,
+            external_user=external_user,
             event=event,
             registered_by=assistant_profile,
             registration_method='manual'
         )
-        
+
         return Response({
-            'message': f'Asistencia registrada para {student_profile.full_name}',
+            'message': f'Asistencia registrada para {attendee_name}',
             'attendance_id': attendance.id,
             'event': event.title,
-            'registered_by': assistant_profile.full_name
+            'registered_by': assistant_profile.full_name,
+            'attendee_type': 'student' if student_profile else 'external'
         }, status=status.HTTP_201_CREATED)
-        
+
     except Exception as e:
         return Response({
             'error': f'Error al crear asistencia: {str(e)}'

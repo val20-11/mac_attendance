@@ -3,10 +3,11 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from django_ratelimit.decorators import ratelimit
+from django.utils import timezone
+from django.db import models
 from .models import Event, ExternalUser
 from .serializers import EventSerializer, ExternalUserSerializer
-import random
-import string
+import re
 
 class EventListView(generics.ListCreateAPIView):
     queryset = Event.objects.filter(is_active=True)
@@ -35,41 +36,97 @@ class EventListView(generics.ListCreateAPIView):
         serializer.save()
 
 @api_view(['POST'])
-@permission_classes([AllowAny])
-@ratelimit(key='ip', rate='3/h', method='POST', block=True)
+@permission_classes([IsAuthenticated])
+@ratelimit(key='user', rate='30/m', method='POST', block=True)
 def register_external_user(request):
-    """Registrar un usuario externo: 3 registros por hora por IP"""
+    """Crear un usuario externo - Solo asistentes: 30 creaciones por minuto"""
+    # Verificar que el usuario sea asistente
+    try:
+        user_profile = request.user.userprofile
+        if user_profile.user_type != 'assistant':
+            return Response({'error': 'Solo los asistentes pueden crear usuarios externos'}, status=403)
+    except:
+        return Response({'error': 'Usuario sin perfil válido'}, status=403)
+
     data = request.data
-    
-    # Generar ID temporal único
-    temp_id = 'EXT' + ''.join(random.choices(string.digits, k=7))
-    
-    # Verificar que no exista
-    while ExternalUser.objects.filter(temporary_id=temp_id).exists():
-        temp_id = 'EXT' + ''.join(random.choices(string.digits, k=7))
-    
+    account_number = data.get('account_number')
+    full_name = data.get('full_name')
+
+    if not account_number or not full_name:
+        return Response({'error': 'Número de cuenta y nombre completo son requeridos'}, status=400)
+
+    # Validar formato de número de cuenta (7 dígitos)
+    if not re.match(r'^\d{7}$', account_number):
+        return Response({'error': 'El número de cuenta debe tener exactamente 7 dígitos'}, status=400)
+
+    # Verificar que no exista en usuarios regulares
+    from authentication.models import UserProfile
+    if UserProfile.objects.filter(account_number=account_number).exists():
+        return Response({'error': 'Este número de cuenta ya está registrado como usuario regular'}, status=400)
+
+    # Verificar que no exista en usuarios externos
+    if ExternalUser.objects.filter(account_number=account_number).exists():
+        return Response({'error': 'Este número de cuenta ya está registrado como usuario externo'}, status=400)
+
     try:
         external_user = ExternalUser.objects.create(
-            full_name=data.get('full_name'),
-            email=data.get('email'),
-            phone=data.get('phone', ''),
-            institution=data.get('institution'),
-            position=data.get('position', ''),
-            reason=data.get('reason'),
-            temporary_id=temp_id,
-            status='pending'
+            full_name=full_name,
+            account_number=account_number,
+            status='approved',
+            approved_by=user_profile
         )
-        
+
         return Response({
-            'message': 'Solicitud enviada exitosamente. Tu ID temporal es: ' + temp_id,
-            'temporary_id': temp_id,
-            'status': 'pending'
+            'message': 'Usuario externo creado exitosamente',
+            'account_number': account_number,
+            'full_name': full_name,
+            'status': 'approved'
         }, status=status.HTTP_201_CREATED)
-        
+
     except Exception as e:
         return Response({
-            'error': f'Error al registrar: {str(e)}'
+            'error': f'Error al crear usuario externo: {str(e)}'
         }, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+@ratelimit(key='user', rate='60/m', method='GET', block=True)
+def search_external_users(request):
+    """Buscar usuarios externos por nombre o número de cuenta - Solo asistentes: 60 búsquedas por minuto"""
+    # Verificar que el usuario sea asistente
+    try:
+        user_profile = request.user.userprofile
+        if user_profile.user_type != 'assistant':
+            return Response({'error': 'Solo los asistentes pueden buscar usuarios externos'}, status=403)
+    except:
+        return Response({'error': 'Usuario sin perfil válido'}, status=403)
+
+    search_query = request.GET.get('q', '').strip()
+
+    if not search_query:
+        return Response({'error': 'Parámetro de búsqueda "q" requerido'}, status=400)
+
+    # Buscar por número de cuenta o nombre (contiene)
+    external_users = ExternalUser.objects.filter(
+        status='approved'
+    ).filter(
+        models.Q(account_number__icontains=search_query) |
+        models.Q(full_name__icontains=search_query)
+    )[:10]  # Limitar a 10 resultados
+
+    results = []
+    for user in external_users:
+        results.append({
+            'id': user.id,
+            'account_number': user.account_number,
+            'full_name': user.full_name,
+            'created_at': user.created_at.strftime('%Y-%m-%d')
+        })
+
+    return Response({
+        'count': len(results),
+        'results': results
+    })
 
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])

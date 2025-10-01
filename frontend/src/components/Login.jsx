@@ -1,29 +1,21 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { apiRequest } from '../services/api'
-import ExternalRegistration from './ExternalRegistration'
 
 const Login = () => {
-    const [credentials, setCredentials] = useState({
-        account_number: '',
-        password: ''
-    })
+    const [accountNumber, setAccountNumber] = useState('')
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
-    const [showExternalForm, setShowExternalForm] = useState(false)
 
     const { login } = useAuth()
-
-    if (showExternalForm) {
-        return <ExternalRegistration onBack={() => setShowExternalForm(false)} />
-    }
 
     const handleSubmit = async (e) => {
         e.preventDefault()
         setLoading(true)
         setError('')
 
-        if (!/^\d{7}$/.test(credentials.account_number)) {
+        // Validar formato: 7 dígitos
+        if (!/^\d{7}$/.test(accountNumber)) {
             setError('El número de cuenta debe tener exactamente 7 dígitos')
             setLoading(false)
             return
@@ -32,11 +24,11 @@ const Login = () => {
         try {
             const response = await apiRequest('/auth/login/', {
                 method: 'POST',
-                body: credentials
+                body: { account_number: accountNumber }
             })
             login(response.user, response.tokens)
         } catch (err) {
-            setError('Error al iniciar sesión. Verifica tus credenciales.')
+            setError('Número de cuenta no encontrado o no autorizado.')
         } finally {
             setLoading(false)
         }
@@ -76,13 +68,10 @@ const Login = () => {
                         </label>
                         <input
                             type="text"
-                            value={credentials.account_number}
+                            value={accountNumber}
                             onChange={(e) => {
                                 const value = e.target.value.replace(/\D/g, '').slice(0, 7)
-                                setCredentials({
-                                    ...credentials,
-                                    account_number: value
-                                })
+                                setAccountNumber(value)
                             }}
                             style={{
                                 width: '100%',
@@ -101,32 +90,6 @@ const Login = () => {
                         <small style={{ color: '#bfdbfe', fontSize: '0.8rem', display: 'block', marginTop: '0.25rem' }}>
                             Ingresa tu número de cuenta de 7 dígitos
                         </small>
-                    </div>
-
-                    <div>
-                        <label style={{ display: 'block', color: 'white', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                            Contraseña
-                        </label>
-                        <input
-                            type="password"
-                            value={credentials.password}
-                            onChange={(e) => setCredentials({
-                                ...credentials,
-                                password: e.target.value
-                            })}
-                            style={{
-                                width: '100%',
-                                padding: '0.75rem',
-                                borderRadius: '0.5rem',
-                                backgroundColor: 'rgba(255,255,255,0.2)',
-                                border: '1px solid rgba(255,255,255,0.3)',
-                                color: 'white',
-                                fontSize: '1rem'
-                            }}
-                            placeholder="Ingresa tu contraseña"
-                            required
-                            disabled={loading}
-                        />
                     </div>
 
                     {error && (
@@ -162,24 +125,11 @@ const Login = () => {
                 </form>
 
                 <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', marginBottom: '1rem' }}>
+                    <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem' }}>
                         Estudiantes: Consulta tus asistencias<br />
-                        Asistentes: Administra y registra asistencias
+                        Asistentes: Registra asistencias<br />
+                        <span style={{ fontSize: '0.8rem' }}>Los usuarios externos deben solicitar su cuenta al asistente</span>
                     </p>
-                    <button
-                        onClick={() => setShowExternalForm(true)}
-                        style={{
-                            backgroundColor: 'transparent',
-                            color: 'white',
-                            border: '1px solid rgba(255,255,255,0.3)',
-                            padding: '0.5rem 1rem',
-                            borderRadius: '0.5rem',
-                            cursor: 'pointer',
-                            fontSize: '0.875rem'
-                        }}
-                    >
-                        ¿Eres externo? Regístrate aquí
-                    </button>
                 </div>
             </div>
         </div>

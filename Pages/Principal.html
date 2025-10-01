@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Asistencia MAC - FES Acatlán UNAM</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: rgb(8, 36, 90);
+            color: #fff;
+            overflow-x: hidden;
+        }
+
+        .cursor-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(189, 149, 0, 0.15), transparent 70%);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 1;
+            transition: opacity 0.3s;
+        }
+
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.3rem;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.2;
+        }
+        
+        .logo-line1 {
+            font-size: 0.9rem;
+            color: rgb(189, 149, 0);
+        }
+        
+        .logo-line2 {
+            font-size: 1.1rem;
+            font-weight: 800;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.5rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: #fff;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .login-btn {
+            padding: 0.6rem 1.5rem;
+            background: linear-gradient(135deg, rgb(189, 149, 0), rgb(220, 180, 50));
+            border-radius: 25px;
+            box-shadow: 0 4px 15px rgba(189, 149, 0, 0.3);
+        }
+
+        .login-btn:hover {
+            box-shadow: 0 6px 20px rgba(189, 149, 0, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .nav-links a:not(.login-btn):hover {
+            color: rgb(189, 149, 0);
+        }
+
+        .hero {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floating-shapes {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            background: linear-gradient(135deg, rgba(189, 149, 0, 0.15), rgba(189, 149, 0, 0.05));
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .shape1 {
+            width: 300px;
+            height: 300px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+
+        .shape2 {
+            width: 400px;
+            height: 400px;
+            bottom: 10%;
+            right: 10%;
+            animation-delay: -7s;
+        }
+
+        .shape3 {
+            width: 250px;
+            height: 250px;
+            top: 50%;
+            left: 50%;
+            animation-delay: -14s;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            33% {
+                transform: translate(50px, -50px) rotate(120deg);
+            }
+            66% {
+                transform: translate(-30px, 30px) rotate(240deg);
+            }
+        }
+
+        .hero-content {
+            text-align: center;
+            z-index: 2;
+            max-width: 900px;
+            padding: 0 2rem;
+        }
+
+        h1 {
+            font-size: clamp(3rem, 8vw, 7rem);
+            font-weight: 900;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+            letter-spacing: -3px;
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, rgb(189, 149, 0) 0%, rgb(220, 180, 50) 50%, rgb(255, 215, 100) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradient-shift 3s ease infinite;
+            background-size: 200% 200%;
+        }
+
+        @keyframes gradient-shift {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .subtitle {
+            font-size: clamp(1.2rem, 2vw, 1.5rem);
+            color: #a0a0a0;
+            margin-bottom: 1.5rem;
+            font-weight: 300;
+        }
+
+        .description {
+            font-size: clamp(1rem, 1.5vw, 1.1rem);
+            color: #b0b0b0;
+            margin-bottom: 3rem;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 1.2rem 3rem;
+            background: linear-gradient(135deg, rgb(189, 149, 0), rgb(220, 180, 50));
+            color: #fff;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            box-shadow: 0 10px 40px rgba(189, 149, 0, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .cta-button:hover::before {
+            left: 100%;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px rgba(189, 149, 0, 0.6);
+        }
+
+        .services {
+            padding: 8rem 4rem;
+            background: linear-gradient(180deg, rgb(8, 36, 90) 0%, rgb(5, 25, 65) 100%);
+        }
+
+        .section-title {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            margin-bottom: 4rem;
+            text-align: center;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .service-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(189, 149, 0, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            border-color: rgba(189, 149, 0, 0.5);
+        }
+
+        .service-card:hover::before {
+            opacity: 1;
+        }
+
+        .service-icon {
+            font-size: 3rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .service-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .service-card p {
+            color: #a0a0a0;
+            line-height: 1.6;
+        }
+
+        footer {
+            padding: 3rem 4rem;
+            text-align: center;
+            background: rgb(5, 20, 50);
+            border-top: 1px solid rgba(189, 149, 0, 0.2);
+        }
+
+        footer p {
+            color: #666;
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                padding: 1.5rem 2rem;
+            }
+
+            .nav-links {
+                gap: 1.5rem;
+                font-size: 0.8rem;
+            }
+
+            .services {
+                padding: 4rem 2rem;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="cursor-glow" id="cursorGlow"></div>
+
+    <nav>
+        <div class="logo">
+            <span class="logo-line1">FES ACATLÁN</span>
+            <span class="logo-line2">UNAM</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#login" class="login-btn">Iniciar Sesión</a></li>
+        </ul>
+    </nav>
+
+    <section class="hero">
+        <div class="floating-shapes">
+            <div class="shape shape1"></div>
+            <div class="shape shape2"></div>
+            <div class="shape shape3"></div>
+        </div>
+        <div class="hero-content">
+            <h1>Sistema de Asistencia <span class="gradient-text">MAC</span></h1>
+            <p class="subtitle">Tu portal de eventos académicos</p>
+            <p class="description">Registra tu asistencia, consulta eventos y mantén un seguimiento completo de tu participación en las actividades de la Semana de Mac u otros eventos.</p>
+            <a href="#login" class="cta-button">Iniciar Sesión</a>
+        </div>
+    </section>
+
+    <section class="services" id="services">
+        <h2 class="section-title">Acceso <span class="gradient-text">rápido</span></h2>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon">👨‍🎓</div>
+                <h3>Estudiantes y Asistentes</h3>
+                <p>Inicia sesión con tu número de cuenta para registrar tu asistencia y acceder a todos los eventos académicos disponibles</p>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">🎫</div>
+                <h3>Visitantes</h3>
+                <p>Solicita acceso para participar en nuestros eventos con un asistente y formar parte de la comunidad académica</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2025 FES Acatlán - UNAM. Todos los derechos reservados.</p>
+    </footer>
+
+    <script>
+        const cursorGlow = document.getElementById('cursorGlow');
+        
+        document.addEventListener('mousemove', (e) => {
+            cursorGlow.style.left = e.clientX + 'px';
+            cursorGlow.style.top = e.clientY + 'px';
+        });
+
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.service-card').forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(30px)';
+            card.style.transition = `all 0.6s ease ${index * 0.1}s`;
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>

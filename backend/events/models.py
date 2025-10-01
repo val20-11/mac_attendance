@@ -133,33 +133,23 @@ class Event(models.Model):
         return f"{modality_icon} {self.title} - {self.date} {self.start_time}"
 
 class ExternalUser(models.Model):
-    """Usuarios externos pendientes de aprobación"""
+    """Usuarios externos"""
     APPROVAL_STATUS = (
         ('pending', 'Pendiente'),
         ('approved', 'Aprobado'),
         ('rejected', 'Rechazado'),
     )
-    
+
     full_name = models.CharField(max_length=200, verbose_name="Nombre completo")
-    email = models.EmailField(verbose_name="Correo electrónico")
-    phone = models.CharField(max_length=15, blank=True, null=True, verbose_name="Teléfono")
-    institution = models.CharField(max_length=200, verbose_name="Institución de procedencia")
-    position = models.CharField(
-        max_length=100, 
-        blank=True, 
-        null=True, 
-        verbose_name="Cargo/Posición"
-    )
-    reason = models.TextField(verbose_name="Motivo de asistencia")
-    temporary_id = models.CharField(
-        max_length=20, 
-        unique=True, 
-        verbose_name="ID temporal"
+    account_number = models.CharField(
+        max_length=7,
+        unique=True,
+        verbose_name="Número de cuenta"
     )
     status = models.CharField(
         max_length=10,
         choices=APPROVAL_STATUS,
-        default='pending',
+        default='approved',
         verbose_name="Estado de aprobación"
     )
     approved_by = models.ForeignKey(
@@ -212,4 +202,4 @@ class ExternalUser(models.Model):
             'rejected': '❌'
         }
         icon = status_icons.get(self.status, '?')
-        return f"{icon} {self.full_name} - {self.institution}"
+        return f"{icon} {self.full_name} - {self.account_number}"

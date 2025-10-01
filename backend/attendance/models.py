@@ -154,7 +154,7 @@ class Attendance(models.Model):
         if self.student:
             return self.student.account_number
         elif self.external_user:
-            return self.external_user.temporary_id
+            return self.external_user.account_number
         return "N/A"
     
     def __str__(self):

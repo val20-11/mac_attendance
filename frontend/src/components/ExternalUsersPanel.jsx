@@ -99,22 +99,8 @@ const ExternalUsersPanel = () => {
                                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem' }}>
                                     <div>
                                         <h3 style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{user.full_name}</h3>
-                                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                                            <strong>Email:</strong> {user.email}
-                                        </p>
-                                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                                            <strong>Institución:</strong> {user.institution}
-                                        </p>
-                                        {user.position && (
-                                            <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                                                <strong>Cargo:</strong> {user.position}
-                                            </p>
-                                        )}
-                                        <p style={{ fontSize: '0.875rem', color: '#6b7280', marginTop: '0.5rem' }}>
-                                            <strong>Motivo:</strong> {user.reason}
-                                        </p>
                                         <p style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.5rem' }}>
-                                            ID Temporal: {user.temporary_id}
+                                            Cuenta: {user.account_number}
                                         </p>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', justifyContent: 'center' }}>
@@ -162,14 +148,8 @@ const ExternalUsersPanel = () => {
                         approvedUsers.map((user) => (
                             <div key={user.id} style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb' }}>
                                 <h3 style={{ fontWeight: '600', marginBottom: '0.5rem' }}>{user.full_name}</h3>
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                                    <strong>Email:</strong> {user.email}
-                                </p>
-                                <p style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.25rem' }}>
-                                    <strong>Institución:</strong> {user.institution}
-                                </p>
                                 <p style={{ fontSize: '0.75rem', color: '#059669', marginTop: '0.5rem', fontWeight: '600' }}>
-                                    ID: {user.temporary_id}
+                                    Cuenta: {user.account_number}
                                 </p>
                             </div>
                         ))
