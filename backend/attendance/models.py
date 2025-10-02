@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+from datetime import datetime, time as dt_time, timedelta
 from authentication.models import UserProfile, ExternalUser
 from events.models import Event
 
@@ -68,14 +69,42 @@ class Attendance(models.Model):
         # Debe tener estudiante O usuario externo, pero no ambos
         if not self.student and not self.external_user:
             raise ValidationError("Debe especificar un estudiante o usuario externo.")
-        
+
         if self.student and self.external_user:
             raise ValidationError("No puede tener ambos: estudiante y usuario externo.")
-        
+
         # Validar que el registrador sea un asistente
         if self.registered_by.user_type != 'assistant':
             raise ValidationError("Solo los asistentes pueden registrar asistencias.")
-        
+
+        # Validar que el evento esté en curso (entre start_time y end_time)
+        now = timezone.now()
+        event_date = self.event.date
+        event_start = datetime.combine(event_date, self.event.start_time)
+        event_end = datetime.combine(event_date, self.event.end_time)
+
+        # Hacer timezone-aware si es necesario
+        if timezone.is_naive(event_start):
+            event_start = timezone.make_aware(event_start)
+        if timezone.is_naive(event_end):
+            event_end = timezone.make_aware(event_end)
+
+        # Permitir registro desde 10 minutos antes hasta el final del evento
+        registration_start = event_start - timedelta(minutes=10)
+
+        if now < registration_start:
+            raise ValidationError(
+                f"No se puede registrar asistencia antes del evento. "
+                f"El evento inicia el {event_date.strftime('%d/%m/%Y')} a las {self.event.start_time.strftime('%H:%M')}. "
+                f"Puedes registrar desde 10 minutos antes."
+            )
+
+        if now > event_end:
+            raise ValidationError(
+                f"No se puede registrar asistencia después del evento. "
+                f"El evento terminó el {event_date.strftime('%d/%m/%Y')} a las {self.event.end_time.strftime('%H:%M')}."
+            )
+
         # Validar que no haya duplicados
         if self.student:
             existing = Attendance.objects.filter(
@@ -212,9 +241,11 @@ class AttendanceStats(models.Model):
         
         self.save()
     
-    def meets_minimum_requirement(self, minimum_percentage=80.0):
-        """Verifica si cumple con el requisito mínimo de asistencia"""
-        return self.attendance_percentage >= minimum_percentage
+    def meets_minimum_requirement(self):
+        """Verifica si cumple con el requisito mínimo de asistencia global"""
+        from authentication.models import SystemConfiguration
+        config = SystemConfiguration.get_config()
+        return self.attendance_percentage >= config.minimum_attendance_percentage
     
     def __str__(self):
         return f"Stats: {self.student.full_name} - {self.attendance_percentage}%"

@@ -1,9 +1,144 @@
 from django.contrib import admin
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from django import forms
 from django.utils.html import format_html
-from .models import UserProfile, Asistente, ExternalUser
+from django.http import HttpResponse
+from import_export import resources, fields
+from import_export.admin import ImportExportModelAdmin
+from import_export.widgets import ForeignKeyWidget
+from .models import UserProfile, Asistente, ExternalUser, SystemConfiguration, Student, AssistantProfile
 from .audit import AuditLog
+
+# Ocultar modelos de Django que no se usan
+admin.site.unregister(User)
+admin.site.unregister(Group)
+
+
+# ===== RECURSOS PARA IMPORT/EXPORT =====
+
+class StudentResource(resources.ModelResource):
+    """Recurso para importar/exportar SOLO estudiantes"""
+
+    class Meta:
+        model = UserProfile
+        fields = ('account_number', 'full_name')
+        export_order = ('account_number', 'full_name')
+        import_id_fields = ['account_number']
+        skip_unchanged = True
+        report_skipped = True
+
+    def before_import_row(self, row, **kwargs):
+        """Validar y limpiar datos antes de importar"""
+        # Limpiar espacios
+        row['account_number'] = str(row.get('account_number', '')).strip()
+        row['full_name'] = str(row.get('full_name', '')).strip()
+        # Asignar automáticamente user_type como student
+        row['user_type'] = 'student'
+
+    def after_save_instance(self, instance, using_transactions, dry_run):
+        """Crear usuario de Django si no existe y asegurar que sea estudiante"""
+        if not dry_run:
+            # Asegurar que sea estudiante
+            if instance.user_type != 'student':
+                instance.user_type = 'student'
+                instance.save()
+
+            # Crear usuario de Django si no existe
+            if not instance.user_id:
+                user = User.objects.create_user(
+                    username=instance.account_number,
+                    first_name=instance.full_name,
+                    password=None
+                )
+                user.set_unusable_password()
+                user.save()
+                instance.user = user
+                instance.save()
+
+
+class AssistantResource(resources.ModelResource):
+    """Recurso para importar/exportar SOLO asistentes"""
+
+    class Meta:
+        model = UserProfile
+        fields = ('account_number', 'full_name')
+        export_order = ('account_number', 'full_name')
+        import_id_fields = ['account_number']
+        skip_unchanged = True
+        report_skipped = True
+
+    def before_import_row(self, row, **kwargs):
+        """Validar y limpiar datos antes de importar"""
+        # Limpiar espacios
+        row['account_number'] = str(row.get('account_number', '')).strip()
+        row['full_name'] = str(row.get('full_name', '')).strip()
+        # Asignar automáticamente user_type como assistant
+        row['user_type'] = 'assistant'
+
+    def after_save_instance(self, instance, using_transactions, dry_run):
+        """Crear usuario de Django si no existe y asegurar que sea asistente"""
+        if not dry_run:
+            # Asegurar que sea asistente
+            if instance.user_type != 'assistant':
+                instance.user_type = 'assistant'
+                instance.save()
+
+            # Crear usuario de Django si no existe
+            if not instance.user_id:
+                user = User.objects.create_user(
+                    username=instance.account_number,
+                    first_name=instance.full_name,
+                    password=None
+                )
+                user.set_unusable_password()
+                user.save()
+                instance.user = user
+                instance.save()
+
+
+class UserProfileResource(resources.ModelResource):
+    """Recurso para importar/exportar UserProfile (LEGACY - no usar)"""
+
+    class Meta:
+        model = UserProfile
+        fields = ('account_number', 'full_name', 'user_type')
+        import_id_fields = ['account_number']
+        skip_unchanged = True
+        report_skipped = True
+
+    def before_import_row(self, row, **kwargs):
+        """Validar y limpiar datos antes de importar"""
+        # Limpiar espacios
+        row['account_number'] = str(row.get('account_number', '')).strip()
+        row['full_name'] = str(row.get('full_name', '')).strip()
+        row['user_type'] = str(row.get('user_type', '')).strip().lower()
+
+    def after_save_instance(self, instance, using_transactions, dry_run):
+        """Crear usuario de Django si no existe"""
+        if not dry_run and not instance.user_id:
+            user = User.objects.create_user(
+                username=instance.account_number,
+                first_name=instance.full_name,
+                password=None
+            )
+            user.set_unusable_password()
+            user.save()
+            instance.user = user
+            instance.save()
+
+
+class ExternalUserResource(resources.ModelResource):
+    """Recurso para exportar usuarios externos"""
+    approved_by_name = fields.Field()
+
+    class Meta:
+        model = ExternalUser
+        fields = ('account_number', 'full_name', 'status', 'approved_by_name', 'created_at', 'rejection_reason')
+        export_order = fields
+
+    def dehydrate_approved_by_name(self, external_user):
+        """Obtener nombre del aprobador"""
+        return external_user.approved_by.full_name if external_user.approved_by else '-'
 
 
 class UserProfileForm(forms.ModelForm):
@@ -12,6 +147,12 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = ['account_number', 'full_name', 'user_type']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Hacer el campo user_type obligatorio
+        self.fields['user_type'].required = True
+        self.fields['user_type'].empty_label = None  # Quitar opción vacía del dropdown
 
     def save(self, commit=True):
         profile = super().save(commit=False)
@@ -35,24 +176,127 @@ class UserProfileForm(forms.ModelForm):
         return profile
 
 
-@admin.register(UserProfile)
-class UserProfileAdmin(admin.ModelAdmin):
-    form = UserProfileForm
-    list_display = ['account_number', 'full_name', 'user_type']
+class StudentAdmin(ImportExportModelAdmin):
+    """Admin SOLO para estudiantes"""
+    resource_class = StudentResource
+    list_display = ['account_number', 'full_name']
     search_fields = ['account_number', 'full_name']
-    list_filter = ['user_type']
+    actions = ['export_selected_students']
 
     fieldsets = (
-        ('Información del Usuario', {
-            'fields': ('account_number', 'full_name', 'user_type'),
-            'description': 'Los usuarios se crean automáticamente sin contraseña. El acceso es solo con número de cuenta.'
+        ('Información del Estudiante', {
+            'fields': ('account_number', 'full_name'),
+            'description': '📚 Importa el Excel con solo 2 columnas: account_number y full_name. El sistema automáticamente los creará como estudiantes.'
         }),
     )
+
+    def get_queryset(self, request):
+        """Mostrar SOLO estudiantes"""
+        qs = super().get_queryset(request)
+        return qs.filter(user_type='student')
+
+    def get_import_formats(self):
+        """Formatos permitidos para importar"""
+        from import_export.formats.base_formats import XLSX, CSV
+        return [XLSX, CSV]
+
+    def get_export_formats(self):
+        """Formatos permitidos para exportar"""
+        from import_export.formats.base_formats import XLSX, CSV
+        return [XLSX, CSV]
+
+    def export_selected_students(self, request, queryset):
+        """Acción para exportar estudiantes seleccionados"""
+        resource = StudentResource()
+        dataset = resource.export(queryset)
+
+        from import_export.formats.base_formats import XLSX
+        xlsx_format = XLSX()
+        export_data = xlsx_format.export_data(dataset)
+
+        response = HttpResponse(
+            export_data,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="estudiantes.xlsx"'
+
+        self.message_user(request, f'Se exportaron {queryset.count()} estudiantes.')
+        return response
+
+    export_selected_students.short_description = "📊 Exportar estudiantes seleccionados"
+
+    def save_model(self, request, obj, form, change):
+        """Asegurar que siempre sea estudiante"""
+        obj.user_type = 'student'
+        super().save_model(request, obj, form, change)
+
+
+class AssistantProfileAdmin(ImportExportModelAdmin):
+    """Admin SOLO para asistentes"""
+    resource_class = AssistantResource
+    list_display = ['account_number', 'full_name']
+    search_fields = ['account_number', 'full_name']
+    actions = ['export_selected_assistants']
+
+    fieldsets = (
+        ('Información del Asistente', {
+            'fields': ('account_number', 'full_name'),
+            'description': '👨‍🏫 Importa el Excel con solo 2 columnas: account_number y full_name. El sistema automáticamente los creará como asistentes.'
+        }),
+    )
+
+    def get_queryset(self, request):
+        """Mostrar SOLO asistentes"""
+        qs = super().get_queryset(request)
+        return qs.filter(user_type='assistant')
+
+    def get_import_formats(self):
+        """Formatos permitidos para importar"""
+        from import_export.formats.base_formats import XLSX, CSV
+        return [XLSX, CSV]
+
+    def get_export_formats(self):
+        """Formatos permitidos para exportar"""
+        from import_export.formats.base_formats import XLSX, CSV
+        return [XLSX, CSV]
+
+    def export_selected_assistants(self, request, queryset):
+        """Acción para exportar asistentes seleccionados"""
+        resource = AssistantResource()
+        dataset = resource.export(queryset)
+
+        from import_export.formats.base_formats import XLSX
+        xlsx_format = XLSX()
+        export_data = xlsx_format.export_data(dataset)
+
+        response = HttpResponse(
+            export_data,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="asistentes.xlsx"'
+
+        self.message_user(request, f'Se exportaron {queryset.count()} asistentes.')
+        return response
+
+    export_selected_assistants.short_description = "📊 Exportar asistentes seleccionados"
+
+    def save_model(self, request, obj, form, change):
+        """Asegurar que siempre sea asistente"""
+        obj.user_type = 'assistant'
+        super().save_model(request, obj, form, change)
+
+
+# Registrar los admins separados con proxy models
+admin.site.register(Student, StudentAdmin)
+admin.site.register(AssistantProfile, AssistantProfileAdmin)
+
+
+# UserProfile está oculto del admin - se usan Student y AssistantProfile en su lugar
 
 
 @admin.register(Asistente)
 class AsistenteAdmin(admin.ModelAdmin):
-    list_display = ['user_profile', 'get_registros_realizados', 'ver_alumnos_registrados', 'minimum_attendance_percentage', 'can_manage_events']
+    list_display = ['user_profile', 'get_registros_realizados', 'ver_alumnos_registrados', 'can_manage_events']
     list_filter = ['can_manage_events']
     search_fields = ['user_profile__full_name', 'user_profile__account_number']
     readonly_fields = ['get_registros_realizados', 'get_ultimos_registros']
@@ -63,7 +307,7 @@ class AsistenteAdmin(admin.ModelAdmin):
             'fields': ('user_profile',)
         }),
         ('Permisos y Configuración', {
-            'fields': ('can_manage_events', 'minimum_attendance_percentage')
+            'fields': ('can_manage_events',)
         }),
         ('Estadísticas de Registros', {
             'fields': ('get_registros_realizados', 'get_ultimos_registros'),
@@ -153,13 +397,15 @@ class AsistenteAdmin(admin.ModelAdmin):
 
 
 @admin.register(ExternalUser)
-class ExternalUserAdmin(admin.ModelAdmin):
+class ExternalUserAdmin(ImportExportModelAdmin):
+    resource_class = ExternalUserResource
     list_display = ['account_number', 'full_name', 'get_status', 'get_approved_by', 'created_at']
     list_filter = ['status', 'created_at', 'approved_by']
     search_fields = ['full_name', 'account_number', 'approved_by__full_name']
     ordering = ['-created_at']
     readonly_fields = ['created_at', 'processed_at']
     date_hierarchy = 'created_at'
+    actions = ['export_selected_external_users']
 
     fieldsets = (
         ('Información Personal', {
@@ -169,6 +415,35 @@ class ExternalUserAdmin(admin.ModelAdmin):
             'fields': ('status', 'approved_by', 'processed_at', 'rejection_reason', 'created_at')
         }),
     )
+
+    def get_export_formats(self):
+        """Solo exportar (no importar usuarios externos)"""
+        from import_export.formats.base_formats import XLSX, CSV
+        return [XLSX, CSV]
+
+    def has_import_permission(self, request):
+        """No permitir importar usuarios externos (se crean desde la app)"""
+        return False
+
+    def export_selected_external_users(self, request, queryset):
+        """Acción para exportar usuarios externos seleccionados"""
+        resource = ExternalUserResource()
+        dataset = resource.export(queryset)
+
+        from import_export.formats.base_formats import XLSX
+        xlsx_format = XLSX()
+        export_data = xlsx_format.export_data(dataset)
+
+        response = HttpResponse(
+            export_data,
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = 'attachment; filename="usuarios_externos.xlsx"'
+
+        self.message_user(request, f'Se exportaron {queryset.count()} usuarios externos.')
+        return response
+
+    export_selected_external_users.short_description = "📊 Exportar usuarios externos seleccionados"
 
     def get_status(self, obj):
         """Muestra el estado con iconos y colores"""
@@ -220,3 +495,40 @@ class AuditLogAdmin(admin.ModelAdmin):
     def has_delete_permission(self, request, obj=None):
         # Solo superusuarios pueden eliminar logs
         return request.user.is_superuser
+
+
+@admin.register(SystemConfiguration)
+class SystemConfigurationAdmin(admin.ModelAdmin):
+    list_display = ['get_config_name', 'minimum_attendance_percentage', 'updated_at', 'updated_by']
+    readonly_fields = ['updated_at', 'updated_by']
+
+    fieldsets = (
+        ('Configuración de Asistencia', {
+            'fields': ('minimum_attendance_percentage',),
+            'description': '⚙️ Este porcentaje se aplica a TODOS los estudiantes del sistema. Define el porcentaje mínimo de asistencia requerido para obtener la constancia.'
+        }),
+        ('Información de Auditoría', {
+            'fields': ('updated_at', 'updated_by'),
+            'classes': ('collapse',)
+        }),
+    )
+
+    def get_config_name(self, obj):
+        return "Configuración Global del Sistema"
+    get_config_name.short_description = 'Configuración'
+
+    def has_add_permission(self, request):
+        # Solo permitir una configuración
+        return not SystemConfiguration.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        # No permitir eliminar la configuración
+        return False
+
+    def save_model(self, request, obj, form, change):
+        # Registrar quién actualizó la configuración
+        try:
+            obj.updated_by = request.user.profile
+        except:
+            pass
+        super().save_model(request, obj, form, change)

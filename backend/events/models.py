@@ -92,9 +92,18 @@ class Event(models.Model):
             if self.start_time >= self.end_time:
                 raise ValidationError("La hora de fin debe ser posterior a la hora de inicio.")
         
-        # Validar que la fecha no sea en el pasado
-        if self.date and self.date < timezone.now().date():
-            raise ValidationError("La fecha del evento no puede ser en el pasado.")
+        # Validar que la fecha/hora del evento no haya terminado
+        if self.date and self.end_time:
+            from datetime import datetime
+            event_end = datetime.combine(self.date, self.end_time)
+
+            # Hacer timezone-aware si es necesario
+            if timezone.is_naive(event_end):
+                event_end = timezone.make_aware(event_end)
+
+            # Solo validar si el evento ya terminó completamente
+            if event_end < timezone.now():
+                raise ValidationError("No se puede crear un evento que ya finalizó.")
         
         # Validar que eventos en línea tengan enlace
         if self.modality in ['online', 'hybrid'] and not self.meeting_link:
