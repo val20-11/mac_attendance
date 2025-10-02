@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Event, ExternalUser
+from .models import Event
+from authentication.models import ExternalUser
 
 class EventSerializer(serializers.ModelSerializer):
     class Meta:

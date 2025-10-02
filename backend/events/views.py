@@ -5,7 +5,8 @@ from rest_framework.response import Response
 from django_ratelimit.decorators import ratelimit
 from django.utils import timezone
 from django.db import models
-from .models import Event, ExternalUser
+from .models import Event
+from authentication.models import ExternalUser
 from .serializers import EventSerializer, ExternalUserSerializer
 import re
 

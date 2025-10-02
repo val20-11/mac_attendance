@@ -1,8 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.utils import timezone
-from authentication.models import UserProfile
-from events.models import Event, ExternalUser
+from authentication.models import UserProfile, ExternalUser
+from events.models import Event
 
 class Attendance(models.Model):
     REGISTRATION_METHODS = (

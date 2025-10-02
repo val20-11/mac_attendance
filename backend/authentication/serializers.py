@@ -43,7 +43,7 @@ class LoginSerializer(serializers.Serializer):
             pass
 
         # Si no es usuario regular, buscar en usuarios externos
-        from events.models import ExternalUser
+        from authentication.models import ExternalUser
         try:
             external_user = ExternalUser.objects.get(account_number=account_number)
             if external_user.status != 'approved':
