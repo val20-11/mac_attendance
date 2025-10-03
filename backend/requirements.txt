@@ -17,6 +17,9 @@ djangorestframework-simplejwt==5.3.1
 # Rate Limiting (protección contra ataques de fuerza bruta)
 django-ratelimit==4.1.0
 
+# Exportación de datos 
+ django-import-export==4.3.10
+
 # Utilidades de desarrollo
 # django-extensions==3.2.3
 # ipython==8.29.0

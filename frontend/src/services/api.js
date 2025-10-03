@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://127.0.0.1:8000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 
 // Gestión de tokens JWT en localStorage
 export const tokenManager = {
@@ -44,7 +44,7 @@ const refreshAccessToken = async () => {
 }
 
 export const apiRequest = async (endpoint, options = {}) => {
-    const url = `${API_BASE_URL}${endpoint}`
+    const url = `${API_BASE_URL}/api${endpoint}`
     const accessToken = tokenManager.getAccessToken()
 
     const defaultOptions = {
