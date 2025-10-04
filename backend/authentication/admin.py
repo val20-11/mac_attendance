@@ -320,15 +320,16 @@ admin.site.register(AssistantProfile, AssistantProfileAdmin)
 
 @admin.register(Asistente)
 class AsistenteAdmin(admin.ModelAdmin):
-    list_display = ['user_profile', 'get_registros_realizados', 'ver_alumnos_registrados', 'can_manage_events']
+    list_display = ['get_asistente_info', 'get_numero_cuenta', 'get_registros_realizados', 'ver_alumnos_registrados', 'can_manage_events']
     list_filter = ['can_manage_events']
     search_fields = ['user_profile__full_name', 'user_profile__account_number']
     readonly_fields = ['get_registros_realizados', 'get_ultimos_registros']
     actions = ['ver_reporte_registros']
 
     fieldsets = (
-        ('Información del Asistente', {
-            'fields': ('user_profile',)
+        ('Asistente', {
+            'fields': ('user_profile',),
+            'description': '⚠️ Solo se pueden seleccionar usuarios de tipo "Asistente". Los estudiantes NO pueden tener permisos de asistente.'
         }),
         ('Permisos y Configuración', {
             'fields': ('can_manage_events',)
@@ -338,6 +339,22 @@ class AsistenteAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    def get_asistente_info(self, obj):
+        """Mostrar nombre del asistente"""
+        return obj.user_profile.full_name
+    get_asistente_info.short_description = 'Asistente'
+
+    def get_numero_cuenta(self, obj):
+        """Mostrar número de cuenta"""
+        return obj.user_profile.account_number
+    get_numero_cuenta.short_description = 'Número de Cuenta'
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Filtrar el campo user_profile para mostrar solo asistentes"""
+        if db_field.name == "user_profile":
+            kwargs["queryset"] = UserProfile.objects.filter(user_type='assistant')
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     def get_registros_realizados(self, obj):
         """Muestra el total de registros realizados por este asistente"""

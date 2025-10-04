@@ -36,11 +36,27 @@ class UserProfile(models.Model):
         return f"{self.account_number} - {self.full_name}"
 
 class Asistente(models.Model):
-    user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE)
-    can_manage_events = models.BooleanField(default=True)
+    user_profile = models.OneToOneField(UserProfile, on_delete=models.CASCADE, limit_choices_to={'user_type': 'assistant'})
+    can_manage_events = models.BooleanField(default=True, verbose_name="Puede gestionar eventos")
+
+    class Meta:
+        verbose_name = "Permiso de Asistente"
+        verbose_name_plural = "Permisos de Asistentes"
+
+    def clean(self):
+        """Validar que el user_profile sea de tipo assistant"""
+        from django.core.exceptions import ValidationError
+        if self.user_profile and self.user_profile.user_type != 'assistant':
+            raise ValidationError({
+                'user_profile': 'Solo se pueden asignar permisos a usuarios de tipo Asistente. Este usuario es un Estudiante.'
+            })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"Asistente: {self.user_profile.full_name}"
+        return f"Permisos: {self.user_profile.full_name}"
 
 class ExternalUser(models.Model):
     """Usuarios externos"""
