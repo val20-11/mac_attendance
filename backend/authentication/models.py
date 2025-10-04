@@ -194,4 +194,12 @@ class AssistantProfile(UserProfile):
 
     def save(self, *args, **kwargs):
         self.user_type = 'assistant'
+        is_new = self.pk is None
         super().save(*args, **kwargs)
+
+        # Crear automáticamente el registro de Asistente (permisos)
+        if is_new:
+            Asistente.objects.get_or_create(
+                user_profile=self,
+                defaults={'can_manage_events': True}
+            )

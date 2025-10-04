@@ -323,13 +323,13 @@ class AsistenteAdmin(admin.ModelAdmin):
     list_display = ['get_asistente_info', 'get_numero_cuenta', 'get_registros_realizados', 'ver_alumnos_registrados', 'can_manage_events']
     list_filter = ['can_manage_events']
     search_fields = ['user_profile__full_name', 'user_profile__account_number']
-    readonly_fields = ['get_registros_realizados', 'get_ultimos_registros']
+    readonly_fields = ['user_profile', 'get_registros_realizados', 'get_ultimos_registros']
     actions = ['ver_reporte_registros']
 
     fieldsets = (
         ('Asistente', {
             'fields': ('user_profile',),
-            'description': '⚠️ Solo se pueden seleccionar usuarios de tipo "Asistente". Los estudiantes NO pueden tener permisos de asistente.'
+            'description': 'ℹ️ Los permisos de asistente se crean automáticamente al crear un Asistente (Perfil). Solo puedes editar los permisos aquí.'
         }),
         ('Permisos y Configuración', {
             'fields': ('can_manage_events',)
@@ -339,6 +339,14 @@ class AsistenteAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+    def has_add_permission(self, request):
+        """No permitir crear nuevos registros manualmente"""
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        """No permitir eliminar registros (se eliminan automáticamente con el perfil)"""
+        return False
 
     def get_asistente_info(self, obj):
         """Mostrar nombre del asistente"""
