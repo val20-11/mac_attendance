@@ -38,6 +38,11 @@ python -m venv venv
 pip install -r requirements.txt
 ```
 
+**⚠️ IMPORTANTE**: Si acabas de clonar el repositorio o actualizaste con nuevas funcionalidades de importación/exportación, ejecuta:
+```bash
+pip install django-import-export openpyxl tablib
+```
+
 4. Configurar variables de entorno:
 ```bash
 cp .env.example .env
@@ -75,6 +80,46 @@ npm run dev
 ```
 
 El frontend estará disponible en `http://localhost:5173`
+
+## 📥 Importación y Exportación de Datos
+
+El sistema incluye funcionalidades de importación/exportación de estudiantes y asistentes mediante archivos Excel (.xlsx) o CSV.
+
+### Formato de Archivos para Importación
+
+Los archivos deben tener **exactamente 2 columnas**:
+
+| account_number | full_name |
+|----------------|-----------|
+| 1234567 | Juan Pérez García |
+| 7654321 | María López Sánchez |
+
+### Desde el Panel de Admin de Django
+
+1. Ve a `http://127.0.0.1:8000/admin/`
+2. Selecciona **Estudiantes** o **Asistentes (Perfiles)**
+3. Haz clic en **"Importar"** en la esquina superior derecha
+4. Selecciona tu archivo Excel (.xlsx) o CSV
+5. Revisa los cambios propuestos
+6. Confirma la importación
+
+### Exportación
+
+1. Selecciona los registros que deseas exportar
+2. En el menú de acciones, selecciona **"📊 Exportar estudiantes/asistentes seleccionados"**
+3. Haz clic en **"Ir"**
+4. Se descargará un archivo Excel con los datos
+
+### Creación Manual
+
+También puedes crear estudiantes y asistentes manualmente:
+1. Ve al panel de admin de Django
+2. Selecciona **Estudiantes** o **Asistentes (Perfiles)**
+3. Haz clic en **"Agregar estudiante"** o **"Agregar asistente"**
+4. Completa los campos:
+   - Número de cuenta (7 dígitos)
+   - Nombre completo
+5. Guarda - el sistema creará automáticamente el usuario de Django asociado
 
 ## 📁 Estructura del Proyecto
 
