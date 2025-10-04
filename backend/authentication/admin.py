@@ -226,8 +226,20 @@ class StudentAdmin(ImportExportModelAdmin):
     export_selected_students.short_description = "📊 Exportar estudiantes seleccionados"
 
     def save_model(self, request, obj, form, change):
-        """Asegurar que siempre sea estudiante"""
+        """Asegurar que siempre sea estudiante y crear usuario si no existe"""
         obj.user_type = 'student'
+
+        # Si no tiene usuario, crear uno
+        if not obj.user_id:
+            user = User.objects.create_user(
+                username=obj.account_number,
+                first_name=obj.full_name,
+                password=None
+            )
+            user.set_unusable_password()
+            user.save()
+            obj.user = user
+
         super().save_model(request, obj, form, change)
 
 
@@ -281,8 +293,20 @@ class AssistantProfileAdmin(ImportExportModelAdmin):
     export_selected_assistants.short_description = "📊 Exportar asistentes seleccionados"
 
     def save_model(self, request, obj, form, change):
-        """Asegurar que siempre sea asistente"""
+        """Asegurar que siempre sea asistente y crear usuario si no existe"""
         obj.user_type = 'assistant'
+
+        # Si no tiene usuario, crear uno
+        if not obj.user_id:
+            user = User.objects.create_user(
+                username=obj.account_number,
+                first_name=obj.full_name,
+                password=None
+            )
+            user.set_unusable_password()
+            user.save()
+            obj.user = user
+
         super().save_model(request, obj, form, change)
 
 
